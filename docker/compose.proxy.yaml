@@ -1,0 +1,25 @@
+services:
+  docker-api:
+    image: nginx:stable-alpine@sha256:0985e772fb9f729e6fa0980da05fca5d9c468e870eed43071545afa9d2e27d94
+    entrypoint: [nginx, -g, 'daemon off;']
+    user: '0:0'
+    volumes:
+      - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks: [control]
+    read_only: true
+    tmpfs: [/var/cache/nginx, /var/run]
+    restart: unless-stopped
+
+  discovery:
+    user: node
+    environment:
+      DOCKER_ENDPOINT: http://docker-api:2375
+    volumes: !override
+      - catalog:/catalog
+    network_mode: !reset null
+    networks: [control]
+    depends_on: [docker-api]
+networks:
+  control:
+    internal: true

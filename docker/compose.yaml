@@ -1,0 +1,47 @@
+name: valkey-discovery
+services:
+  discovery:
+    image: ${DISCOVERY_IMAGE:-valkey-admin-discovery:local}
+    build:
+      context: ..
+    user: '0:0'
+    environment:
+      DOCKER_ENDPOINT: unix:///var/run/docker.sock
+      DISCOVERY_NETWORK: ${COMPOSE_PROJECT_NAME:-valkey-discovery}-data
+    volumes:
+      - catalog:/catalog
+      - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock:ro
+    network_mode: none
+    init: true
+    read_only: true
+    restart: unless-stopped
+
+  valkey-admin:
+    image: valkey-admin-catalog:e37400f
+    pull_policy: never
+    environment:
+      DEPLOYMENT_MODE: Web
+      VALKEY_ADMIN_CONNECTIONS_FILE: /catalog/connections.json
+      VALKEY_ADMIN_ALLOWED_WS_ORIGINS: http://127.0.0.1:${ADMIN_PORT:-18085}
+    ports:
+      - 127.0.0.1:${ADMIN_PORT:-18085}:8080
+    volumes:
+      - catalog:/catalog:ro
+    networks: [data]
+    depends_on: [discovery]
+    restart: unless-stopped
+
+  blue:
+    image: valkey/valkey:9.1.2@sha256:418652cfb58ef879d4978c33553735d7147016032d5aefaa14c828e611eb9dfd
+    command: [valkey-server, --requirepass, demo-blue-password]
+    labels:
+      valkey-admin.discover: 'true'
+      valkey-admin.alias: blue
+      valkey-admin.username: default
+    networks: [data]
+
+networks:
+  data:
+    name: ${COMPOSE_PROJECT_NAME:-valkey-discovery}-data
+volumes:
+  catalog:

@@ -1,0 +1,9 @@
+services:
+  green:
+    image: valkey/valkey:9.1.2@sha256:418652cfb58ef879d4978c33553735d7147016032d5aefaa14c828e611eb9dfd
+    command: [valkey-server, --requirepass, demo-green-password]
+    labels:
+      valkey-admin.discover: 'true'
+      valkey-admin.alias: green
+      valkey-admin.username: default
+    networks: [data]

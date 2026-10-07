@@ -1,0 +1,8 @@
+**
+!Dockerfile
+!LICENSE
+!docker/
+!docker/discovery.mjs
+!docker/daemon.mjs
+!kubernetes/
+!kubernetes/catalog-discovery.mjs

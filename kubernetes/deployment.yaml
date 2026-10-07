@@ -1,0 +1,111 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: valkey-admin-discovery
+  namespace: valkey-lab
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: valkey-admin-discovery
+rules:
+  - apiGroups: [valkey.io]
+    resources: [valkeyclusters]
+    verbs: [list]
+  - apiGroups: ['']
+    resources: [services]
+    verbs: [list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: valkey-admin-discovery
+subjects:
+  - kind: ServiceAccount
+    name: valkey-admin-discovery
+    namespace: valkey-lab
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: valkey-admin-discovery
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: valkey-admin-discovery
+  namespace: valkey-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: valkey-admin-discovery}
+  template:
+    metadata:
+      labels: {app: valkey-admin-discovery}
+    spec:
+      automountServiceAccountToken: false
+      serviceAccountName: valkey-admin-discovery
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      initContainers:
+        - name: catalog-init
+          image: valkey-admin-catalog:e37400f
+          imagePullPolicy: Never
+          command: [node, -e, "require('fs').writeFileSync('/catalog/connections.json','[]')"]
+          volumeMounts:
+            - {name: catalog, mountPath: /catalog}
+      containers:
+        - name: admin
+          image: valkey-admin-catalog:e37400f
+          imagePullPolicy: Never
+          env:
+            - {name: DEPLOYMENT_MODE, value: Web}
+            - {name: SERVER_BIND_HOST, value: 0.0.0.0}
+            - {name: VALKEY_ADMIN_ALLOWED_WS_ORIGINS, value: 'http://localhost:18087,http://127.0.0.1:18087'}
+            - {name: VALKEY_ADMIN_CONNECTIONS_FILE, value: /catalog/connections.json}
+          ports:
+            - {name: http, containerPort: 8080}
+          readinessProbe:
+            httpGet: {path: /, port: http}
+            periodSeconds: 3
+          resources:
+            requests: {cpu: 100m, memory: 192Mi}
+            limits: {memory: 1Gi}
+          volumeMounts:
+            - {name: catalog, mountPath: /catalog, readOnly: true}
+        - name: discovery
+          image: valkey-admin-discovery:local
+          imagePullPolicy: Never
+          command: [node, /app/kubernetes/catalog-discovery.mjs]
+          readinessProbe:
+            exec:
+              command: [node, -e, "require('fs').accessSync('/catalog/connections.json.ready')"]
+            periodSeconds: 3
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {memory: 96Mi}
+          volumeMounts:
+            - {name: catalog, mountPath: /catalog}
+            - {name: discovery-identity, mountPath: /var/run/secrets/kubernetes.io/serviceaccount, readOnly: true}
+      volumes:
+        - name: catalog
+          emptyDir: {}
+        - name: discovery-identity
+          projected:
+            sources:
+              - serviceAccountToken: {path: token, expirationSeconds: 3600}
+              - configMap:
+                  name: kube-root-ca.crt
+                  items: [{key: ca.crt, path: ca.crt}]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: valkey-admin-discovery
+  namespace: valkey-lab
+spec:
+  selector: {app: valkey-admin-discovery}
+  ports:
+    - {name: http, port: 8080, targetPort: http}

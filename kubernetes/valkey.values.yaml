@@ -1,0 +1,24 @@
+# Disposable valkey-resources fixture.
+fullnameOverride: blue
+cluster:
+  labels:
+    valkey-spike: shared
+  spec:
+    shards: 1
+    replicas: 0
+    image: valkey/valkey:9.1.2@sha256:418652cfb58ef879d4978c33553735d7147016032d5aefaa14c828e611eb9dfd
+    exporter:
+      enabled: false
+    networking:
+      discovery:
+        preferredEndpointType: Hostname
+    resources:
+      requests: {cpu: 50m, memory: 64Mi}
+      limits: {memory: 192Mi}
+    users:
+      - name: default
+        enabled: true
+        permissions: '+@all ~* &*'
+        passwordSecret:
+          name: blue-users
+          keys: [password]
