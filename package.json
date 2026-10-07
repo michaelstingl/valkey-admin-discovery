@@ -1,9 +1,11 @@
 {
   "name": "valkey-admin-discovery",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "test": "node --test docker/test/*.test.mjs kubernetes/*.test.mjs"
   }
