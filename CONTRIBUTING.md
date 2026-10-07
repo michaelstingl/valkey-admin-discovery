@@ -26,7 +26,7 @@ gh workflow run ci.yaml --ref v0.1.0
 An older release rerun does not replace `latest`. To rerun checks on an open release PR:
 
 ```sh
-gh workflow run ci.yaml --ref release-please--branches--main
+gh workflow run ci.yaml --ref release-please--branches--main--components--valkey-admin-discovery
 ```
 
 The image contains both discovery adapters, so they share one version. SemVer describes the discovery configuration and behavior; it does not track the Valkey, valkey-admin or operator versions used by the examples.
