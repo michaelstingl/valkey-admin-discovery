@@ -32,7 +32,18 @@ Build locally:
 docker build -t valkey-admin-discovery:local .
 ```
 
-The CI workflow publishes `ghcr.io/michaelstingl/valkey-admin-discovery:main` and `:sha-<full-commit>` after unit and Docker browser checks pass on `main`. Use the commit tag or digest for repeatable deployments. Both `linux/amd64` and `linux/arm64` are built; this does not imply the Kubernetes example has been tested on both architectures. The supplied examples build locally by default.
+Published images: `ghcr.io/michaelstingl/valkey-admin-discovery`.
+
+| Tag | Contents |
+|---|---|
+| `0.1.0` | A specific release; see [release notes](https://github.com/michaelstingl/valkey-admin-discovery/releases) |
+| `latest` | The latest release |
+| `main` | The latest successful build of `main` |
+| `sha-<full-commit>` | A build of a specific commit |
+
+CI publishes images after unit and Docker browser checks pass. Releases run CI against the exact Git tag before publishing the versioned image. Pin an image digest (`@sha256:…`) for an immutable deployment. Both `linux/amd64` and `linux/arm64` are built; this does not imply the Kubernetes example has been tested on both architectures. The supplied examples build locally by default.
+
+Versioning follows SemVer, starting at `0.1.0` while this is a proof of concept. [Release Please](https://github.com/googleapis/release-please) maintains the package version, `CHANGELOG.md` and GitHub releases. See [Contributing](CONTRIBUTING.md) for commit conventions and the release workflow.
 
 The producer needs platform access: the Docker socket grants broad Docker privileges; Kubernetes RBAC grants list access to selected resource kinds across namespaces. Only discovery receives those credentials. See each runbook for limits and the optional Docker proxy.
 
